@@ -1,0 +1,319 @@
+unit NewSim2;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, ImgList, ExtDlgs, Menus, ComCtrls, ToolWin, ExtCtrls,
+  MolDefs;
+
+type
+  TDisplayTreeForm = class(TForm)
+    Image: TImage;
+    ToolBar: TToolBar;
+    SaveButton: TToolButton;
+    PrintButton: TToolButton;
+    ToolButton1: TToolButton;
+    LadLeftButton: TToolButton;
+    LadRightButton: TToolButton;
+    LabelButton: TToolButton;
+    BrLengthButton: TToolButton;
+    FontButton: TToolButton;
+    MainMenu1: TMainMenu;
+    File1: TMenuItem;
+    Print1: TMenuItem;
+    Save1: TMenuItem;
+    Close1: TMenuItem;
+    Edit1: TMenuItem;
+    CopyatBitmap1: TMenuItem;
+    CopyatMetafile1: TMenuItem;
+    N1: TMenuItem;
+    LadderizeLeft1: TMenuItem;
+    LadderizeRight1: TMenuItem;
+    LabelsItem: TMenuItem;
+    BrLengthItem: TMenuItem;
+    LabelFont1: TMenuItem;
+    N2: TMenuItem;
+    ShowToolbar: TMenuItem;
+    SavePictureDialog: TSavePictureDialog;
+    ImageList: TImageList;
+    FontDialog: TFontDialog;
+    PrintDialog: TPrintDialog;
+    procedure SaveButtonClick(Sender: TObject);
+    procedure PrintButtonClick(Sender: TObject);
+    procedure Close1Click(Sender: TObject);
+    procedure FontButtonClick(Sender: TObject);
+    procedure LadLeftButtonClick(Sender: TObject);
+    procedure LadRightButtonClick(Sender: TObject);
+    procedure BrLengthItemClick(Sender: TObject);
+    procedure ShowToolbarClick(Sender: TObject);
+    procedure CopyatMetafile1Click(Sender: TObject);
+    procedure LabelButtonClick(Sender: TObject);
+    procedure CopyatBitmap1Click(Sender: TObject);
+    procedure FormResize(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure FormCreate(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+    Tree : TNode;
+    BitM : TBitmap;
+    lines : TDrawRecs;
+    //procedure InitTree(TTree : TNode; choice : boolean);
+    procedure InitTree(FileName : string);
+    procedure Redraw;
+  end;
+
+var
+  DisplayTreeForm: TDisplayTreeForm;
+
+implementation
+
+{$R *.dfm}
+
+uses Jpeg, Printers, Clipbrd;
+
+{procedure TDisplayTreeForm.InitTree(TTree : TNode; choice : boolean);
+begin
+     Tree := TTree;
+     SetLength(lines,2*CountTips(Tree)-1);
+end;}
+
+procedure TDisplayTreeForm.InitTree(FileName : string);
+var
+   TempStr,
+   TreeText : string;
+   TempTree : TNode;
+   infile : TextFile;
+begin
+     { Read Model Tree }
+     TempTree := TNode.Create;
+     AssignFile(infile,FileName); Reset(infile);
+     TreeText := '';
+     repeat
+           ReadLn(infile,TempStr);
+           treetext := TreeText + TempStr;
+     until (Pos(';',TreeText) <> 0);
+     Closefile(infile);
+     ReadTreePar(treetext,TempTree);
+     Tree := FindRootNode(TempTree);
+     SetLength(lines,2*CountTips(Tree)-1);
+     DisplayTreeForm.Caption := ExtractFileName(FileName);
+end;
+
+procedure TDisplayTreeForm.Redraw;
+var
+   l,s : double;
+   maxname,c : integer;
+begin
+     if (Tree <> nil) and (BitM <> nil) then begin
+        Screen.Cursor := crHourglass;
+        with BitM do begin
+             Width := ClientWidth;
+             Height := ClientHeight;
+             if Toolbar.Visible then Height := Height - ToolBar.Height;
+
+             with Canvas do begin
+                  Brush.Color := clWhite;
+                  Brush.Style := bsSolid;
+                  FillRect(ClipRect);
+             end;
+             l := MaxNodeTipLength(Tree);
+             maxname := Canvas.TextWidth(MaxNodeName(Tree));
+             s := (Width - 40 - maxname) / l;
+             c := 0;
+             DrawTree(canvas,c,10,Width-40-maxname,10,Height-20,Tree,s,
+                 LabelsItem.Checked,BrLengthItem.Checked,lines);
+        end;
+        Image.Picture.Bitmap := BitM;
+        Screen.Cursor := crDefault;
+     end;
+end;
+
+procedure TDisplayTreeForm.SaveButtonClick(Sender: TObject);
+var
+   MetaF : TMetaFile;
+   MetaC : TMetaFileCanvas;
+   JPG : TJpegImage;
+   c : integer;
+   l,s : double;
+begin
+     if SavePictureDialog.Execute then begin
+        MetaF := nil; Jpg := nil;
+        case SavePictureDialog.FilterIndex of
+             1 : BitM.SaveToFile(SavePictureDialog.Filename);
+             2..3 : try
+                       MetaF := TMetaFile.Create;
+                       MetaC := TMetaFileCanvas.Create(MetaF,0);
+                       try
+                          MetaC.Font.Assign(BitM.Canvas.Font);
+                          l := MaxNodeTipLength(Tree);
+                          s := ClientWidth / l;
+                          c := 0;
+                          DrawTree(MetaC,c,0,ClientWidth,0,ClientHeight,Tree,
+                             s,LabelsItem.Checked,BrLengthItem.Checked,lines);
+                       finally
+                              MetaC.Free;
+                       end;
+                       case SavePictureDialog.FilterIndex of
+                            2 : MetaF.Enhanced := true;
+                            3 : MetaF.Enhanced := false;
+                       end;
+                       MetaF.SaveToFile(SavePictureDialog.Filename);
+                    finally
+                           MetaF.Free;
+                    end;
+             4 : try
+                    JPG := TJpegImage.Create;
+                    Jpg.Grayscale := false;
+                    Jpg.ProgressiveEncoding := true;
+                    Jpg.CompressionQuality := 100;
+                    Jpg.Assign(Image.Picture.Graphic);
+                    Jpg.SaveToFile(SavePictureDialog.Filename);
+                 finally
+                        jpg.free;
+                 end;
+        end;
+     end;
+end;
+
+procedure TDisplayTreeForm.PrintButtonClick(Sender: TObject);
+var
+   maxname,c,xmarg,ymarg : integer;
+   l,s : double;
+begin
+     if PrintDialog.Execute then begin
+        xmarg := 600; ymarg := 600;
+        with Printer do begin
+             try
+                BeginDoc;
+                Printer.Canvas.Font.Assign(BitM.Canvas.Font);
+                l := MaxNodeTipLength(Tree);
+                maxname := Canvas.TextWidth(MaxNodeName(Tree));
+                s := (Printer.PageWidth - xmarg * 2 - maxname) / l;
+                c := 0;
+                DrawTree(Printer.Canvas,c,xmarg,Printer.PageWidth-xmarg-maxname,
+                    ymarg,Printer.PageHeight-ymarg,Tree,s,LabelsItem.Checked,BrLengthItem.Checked,lines);
+             finally
+                    EndDoc;
+             end;
+        end;
+     end;
+end;
+
+procedure TDisplayTreeForm.Close1Click(Sender: TObject);
+begin
+     Close;
+end;
+
+procedure TDisplayTreeForm.FontButtonClick(Sender: TObject);
+begin
+     FontDialog.Font.Assign(BitM.Canvas.Font);
+     if FontDialog.Execute then begin
+        BitM.Canvas.Font.Assign(FontDialog.Font);
+        Redraw;
+     end;
+end;
+
+procedure TDisplayTreeForm.LadLeftButtonClick(Sender: TObject);
+begin
+     LadLeft(Tree);
+     Redraw;
+end;
+
+procedure TDisplayTreeForm.LadRightButtonClick(Sender: TObject);
+begin
+     LadRight(Tree);
+     Redraw;
+end;
+
+procedure TDisplayTreeForm.BrLengthItemClick(Sender: TObject);
+begin
+     if BrLengthItem.Checked then begin
+        BrLengthItem.Checked := false;
+        BrLengthButton.Down := false;
+     end else begin
+          BrLengthItem.Checked := true;
+          BrLengthButton.Down := true;
+     end;
+     Redraw;
+end;
+
+procedure TDisplayTreeForm.ShowToolbarClick(Sender: TObject);
+begin
+     if ShowToolbar.Checked then begin
+        ShowToolbar.Checked := false;
+        Toolbar.Visible := false;
+     end else begin
+         ShowToolbar.Checked := true;
+         Toolbar.Visible := true;
+     end;
+     Redraw;
+end;
+
+procedure TDisplayTreeForm.CopyatMetafile1Click(Sender: TObject);
+var
+   MetaF : TMetaFile;
+   MetaC : TMetafileCanvas;
+   c : integer;
+   l,s : double;
+begin
+     MetaF := TMetaFile.Create;
+     MetaC := TMetaFileCanvas.Create(MetaF,0);
+     try
+        MetaC.Font.Assign(BitM.Canvas.Font);
+        l := MaxNodeTipLength(Tree);
+        s := ClientWidth / l;
+        c := 0;
+        DrawTree(MetaC,c,0,ClientWidth,0,ClientHeight,Tree,s,LabelsItem.Checked,BrLengthItem.Checked,lines);
+     finally
+            MetaC.Free;
+     end;
+     Clipboard.Assign(MetaF);
+     MetaF.Free;
+end;
+
+procedure TDisplayTreeForm.LabelButtonClick(Sender: TObject);
+begin
+     if LabelsItem.Checked then begin
+        LabelsItem.Checked := false;
+        LabelButton.Down := false;
+     end else begin
+          LabelsItem.Checked := true;
+          LabelButton.Down := true;
+     end;
+     Redraw;
+end;
+
+procedure TDisplayTreeForm.CopyatBitmap1Click(Sender: TObject);
+var
+   MyFormat : word;
+   AData : THandle;
+   APalette : HPALETTE;
+begin
+     BitM.SaveToClipBoardFormat(MyFormat,AData,APalette);
+     ClipBoard.SetAsHandle(MyFormat,AData);
+end;
+
+procedure TDisplayTreeForm.FormResize(Sender: TObject);
+begin
+     Redraw;
+end;
+
+procedure TDisplayTreeForm.FormClose(Sender: TObject;
+  var Action: TCloseAction);
+begin
+     if (BitM <> nil) then BitM.Free;
+     Lines := nil; BitM := nil;
+end;
+
+procedure TDisplayTreeForm.FormCreate(Sender: TObject);
+begin
+     Tree := nil;
+     Lines := nil;
+     BitM := TBitMap.create;
+     BitM.Canvas.Font.Assign(FontDialog.Font);
+end;
+
+end.

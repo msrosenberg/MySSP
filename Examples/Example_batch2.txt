@@ -1,0 +1,13 @@
+# Example batch file 2
+# a simulation of 2 genes with different parameters for the 3-taxon tree; the second
+# gene include insertions (but not deletions)
+
+Tree 3_taxon_tree.txt;
+NGenes 2;
+Output Prefix=Example2_ Dir=ExampleOutput NReps=5 Format=nex;
+Gene 1 NSites=100 StartA=0.2 StartC=0.3 StartG=0.3 StartT=0.2
+  / 0: Model=HKY Rate=1.0 Kappa=3.2 GammaAlpha=0.0 EqA=0.2 EqC=0.3 EqG=0.3 EqT=0.2;
+Gene 2 NSites=500 StartA=0.25 StartC=0.25 StartG=0.25 StartT=0.25
+  / 0: Model=JC Rate=1.0 GammaAlpha=0.5 DoIns=yes InsRate=50 InsSize=6;
+Execute;
+

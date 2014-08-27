@@ -1,0 +1,10 @@
+# Example batch file 1
+# A simple simultion of 1 gene for the 3-taxon tree
+
+Tree 3_taxon_tree.txt;
+NGenes 1;
+Output Prefix=Example1_ Dir=ExampleOutput NReps=5 Format=nex;
+Gene 1 NSites=100 StartA=0.2 StartC=0.3 StartG=0.3 StartT=0.2
+  / 0: Model=HKY Rate=1.0 Kappa=3.2 GammaAlpha=0.0 EqA=0.2 EqC=0.3 EqG=0.3 EqT=0.2;
+Execute;
+

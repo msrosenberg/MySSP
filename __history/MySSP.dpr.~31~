@@ -1,0 +1,108 @@
+program MySSP;
+
+{$IFDEF FPC}
+ {$MODE DELPHI}
+{$ENDIF FPC}
+
+uses
+  {$IFNDEF FPC}
+  Forms,
+  NewSim1 in 'NewSim1.pas' {MainForm},
+  NewSim2 in 'NewSim2.pas' {DisplayTreeForm},
+  NewSim3 in 'NewSim3.pas' {DirForm}, {$ENDIF}
+  MolDefs in 'MolDefs.pas',
+  Classes,Contnrs,
+  SysUtils,
+  NewSimCMD in 'NewSimCMD.pas';
+
+{$R *.res}
+
+{$IFDEF FPC}
+var
+   batfile : TextFile;
+   comstr,instr : string;
+   badcommand,quit : boolean;
+   tot,cnt : integer;
+   tempf : TStringList;
+   NewGene : TInitGene;
+{$ENDIF}
+
+begin
+  {$IFDEF FPC}
+  writeln('MySSP');
+  writeln('  Michael S. Rosenberg');
+  writeln('  Copyright (c) 2005-2007';
+  writeln('  Version 1.1.1.11');
+  writeln;
+  if (ParamCount = 0) then begin
+     writeln('Usage:  MySSP <batch filename>');
+  end else if (ParamCount > 1) then
+     writeln('Too many parameters')
+  else try
+       GeneList := TObjectList.Create;
+       SubRootList := TObjectList.Create;
+       NewGene := TInitGene.Create;
+       SubRootNumbers := nil;
+       CMDResetGenes;
+       CMDSetGeneValues(NewGene);
+       GeneList.Add(NewGene);
+       //CGene := 0;
+       Rcnt := 0;
+       Randomize;
+       Seed := -1 * random(30000);
+
+       //filen := ParamStr(1);
+       tempf := TStringList.Create;
+       tempf.LoadFromFile(ParamStr(1));
+       tot := tempf.count;
+       tempf.free;
+
+
+       AssignFile(batfile,ParamStr(1)); Reset(batfile);
+       quit := false;
+       comstr := '';
+       cnt := 0;
+       badcommand := true;
+       repeat
+             readln(batfile,instr);
+             inc(cnt);
+             writeln('Processing Line '+IntToStr(cnt)+' of '
+                  + IntToStr(tot) + ' of Batchfile');
+             if (trim(instr) <> '') then
+                if (trim(instr)[1] <> '#') then begin
+                   instr := instr + ' ';
+                   while (Pos(';',instr) > 0) and not quit do begin
+                         comstr := comstr + ' ' + Copy(instr,1,Pos(';',instr));
+                         //execute command
+                         comstr := trim(Copy(comstr,1,length(comstr)-1));
+                         if (UpperCase(comstr) = 'QUIT') then quit := true
+                         else badcommand := CMDExecuteBatchCommand(comstr);
+                         comstr := '';
+                         instr := Copy(instr,Pos(';',instr)+1,length(instr));
+                         if badcommand then quit := true;
+                   end;
+                   comstr := comstr + ' ' + instr;
+                end;
+       until quit or eof(batfile);
+       if badcommand then begin
+          writeln('Error in batch file - line '+IntToStr(cnt));
+          Rcnt := 0;
+          SubRootNumbers := nil;
+       end;
+       CloseFile(batfile);
+  finally
+         writeln('Batch File Processing Complete');
+         if (GeneList <> nil) then
+            GeneList.Free;
+         if (SubRootList <> nil) then
+            SubRootList.Free;
+         SubRootNumbers := nil;
+  end;
+  writeln;
+  {$ELSE}
+  Application.Initialize;
+  Application.Title := 'MySSP';
+  Application.CreateForm(TMainForm, MainForm);
+  Application.Run;
+  {$ENDIF}
+end.

@@ -1,0 +1,1 @@
+fpc -Mdelphi -oMySSP_linux MySSP.dpr

@@ -1,0 +1,27 @@
+# At this time I would not use and gamma distribution with nonstationarity.
+# I don't believe it will work correctly.
+
+Tree mammaliantree.txt;
+seed -123;
+NGenes 3;
+Output Prefix= TestOut Dir =TestDir NReps=35 Format=Meg;
+Gene 2 NSites=125 StartA=0.3 StartC=0.2 StartG=0.3 StartT=0.2
+  / 0: Model=HKY  Rate=0.04 Kappa=5 GammaAlpha=0 EqA=0.4 EqC=0.1 EqG=0.4 EqT=0.1
+  / 5: Model=HKY  Rate=0.4 Kappa=3 GammaAlpha=0 EqA=0.2 EqC=0.3 EqG=0.2 EqT=0.3
+  / 12: Model=HKY  Rate=0.4 Kappa=3 GammaAlpha=0 EqA=0.2 EqC=0.3 EqG=0.2 EqT=0.3;
+Gene 3 NSites=400 StartA=0.1 StartC=0.4 StartG=0.1 StartT=0.4
+  / 0: Model=K2  Rate=0.1 Kappa=5 GammaAlpha=0 EqA=0.4 EqC=0.1 EqG=0.4 EqT=0.1
+  / 17: Model=HKY  Rate=0.4 Kappa=3 GammaAlpha=0 EqA=0.2 EqC=0.3 EqG=0.2 EqT=0.3;
+Execute;
+ClearGenes;
+Output Prefix= TestOut Dir =TestDir2 NReps=35 format=nex;
+NGenes 2;
+Gene 1 NSites=25 StartA=0.3 StartC=0.2 StartG=0.3 StartT=0.2
+  / 0: Model=HKY  Rate=0.04 Kappa=5 GammaAlpha=0 EqA=0.4 EqC=0.1 EqG=0.4 EqT=0.1;
+Gene 2 NSites=100 StartA=0.1 StartC=0.4 StartG=0.1 StartT=0.4
+  / 0: Model=GenRes  Rate=0.1 GammaAlpha=0 EqA=0.4 EqC=0.1 EqG=0.4 EqT=0.1
+         GenResPar= (1,2,3,4,5,10);
+Execute;
+
+Quit ;
+

@@ -1,0 +1,13 @@
+# Example batch file 3
+# a simultion of 1 gene for the 66-taxon mammalian tree; a nonstationary process was added by
+# changing the model for primates (branch #88).  Starting at this branch, the rate of substitions
+# was doubled and the equlibrium nucleotide frequences altered.
+
+Tree Murphy_mammal_tree.txt;
+NGenes 1;
+Output Prefix=Example3_ Dir=ExampleOutput NReps=5 Format=nex;
+Gene 1 NSites=100 StartA=0.2 StartC=0.3 StartG=0.3 StartT=0.2
+  / 0: Model=HKY Rate=1.0 Kappa=3.2 GammaAlpha=0.5 EqA=0.2 EqC=0.3 EqG=0.3 EqT=0.2
+  / 88: Model=HKY Rate=2.0 Kappa=3.2 GammaAlpha=0.5 EqA=0.15 EqC=0.35 EqG=0.35 EqT=0.15;
+Execute;
+
